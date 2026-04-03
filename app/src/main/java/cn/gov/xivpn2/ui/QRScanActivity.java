@@ -3,6 +3,7 @@ package cn.gov.xivpn2.ui;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -12,7 +13,6 @@ import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
@@ -23,15 +23,18 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.lifecycle.LifecycleOwner;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.mlkit.vision.barcode.BarcodeScanner;
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
-import com.google.mlkit.vision.barcode.BarcodeScanning;
-import com.google.mlkit.vision.barcode.common.Barcode;
-import com.google.mlkit.vision.common.InputImage;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.ChecksumException;
+import com.google.zxing.FormatException;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.PlanarYUVLuminanceSource;
+import com.google.zxing.Result;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.multi.qrcode.QRCodeMultiReader;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
 import cn.gov.xivpn2.R;
@@ -111,11 +114,6 @@ public class QRScanActivity extends AppCompatActivity {
         previewView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
 
-        // mlkit barcode scanner
-
-        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
-                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                .build();
 
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -123,42 +121,54 @@ public class QRScanActivity extends AppCompatActivity {
 
         imageAnalysis.setAnalyzer(getMainExecutor(), imageProxy -> {
 
-            Log.d(TAG, "on analyze " + imageProxy.getWidth() + "x" + imageProxy.getHeight());
+            if (imageProxy.getFormat() != ImageFormat.YUV_420_888 && imageProxy.getFormat() != ImageFormat.YUV_422_888 && imageProxy.getFormat() != ImageFormat.YUV_444_888) {
+                imageProxy.close();
+                return;
+            }
 
-            Bitmap bitmap = imageProxy.toBitmap();
-            InputImage inputImage = InputImage.fromBitmap(bitmap, imageProxy.getImageInfo().getRotationDegrees());
-            BarcodeScanner client = BarcodeScanning.getClient(options);
+            ByteBuffer byteBuffer = imageProxy.getPlanes()[0].getBuffer();
 
-            client.process(inputImage)
-                    .addOnSuccessListener(barcodes -> {
-                        if (barcodes.isEmpty()) return;
+            byte[] imageData = new byte[byteBuffer.capacity()];
+            byteBuffer.get(imageData);
 
-                        // qrcode found
+            PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
+                    imageData,
+                    imageProxy.getWidth(), imageProxy.getHeight(),
+                    0, 0,
+                    imageProxy.getWidth(), imageProxy.getHeight(),
+                    false
+            );
 
-                        Barcode barcode = barcodes.get(0);
-                        String rawValue = barcode.getRawValue();
+            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
 
-                        Log.i(TAG, "qr code found " + rawValue);
+            try {
+                Result result = new QRCodeMultiReader().decode(binaryBitmap);
+                String text = result.getText();
 
-                        try {
-                            SubscriptionWork.parseLine(rawValue, "none");
-                            Toast.makeText(QRScanActivity.this, R.string.proxy_added, Toast.LENGTH_SHORT).show();
-                        } catch (Exception e) {
-                            Log.e(TAG, "parse line", e);
+                Log.i(TAG, "decode: " + text);
 
-                            new AlertDialog.Builder(this)
-                                    .setTitle(R.string.error)
-                                    .setMessage(getString(R.string.invalid_link) + "\n\n" + e.getMessage())
-                                    .setPositiveButton(R.string.ok, null)
-                                    .show();
-                        }
+                cameraProvider.unbind(preview);
+                cameraProvider.unbind(imageAnalysis);
 
-                        cameraProvider.unbind(preview);
-                        cameraProvider.unbind(imageAnalysis);
+                try {
+                    SubscriptionWork.parseLine(text, "none");
+                    Toast.makeText(QRScanActivity.this, R.string.proxy_added, Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e(TAG, "parse line", e);
+                    new AlertDialog.Builder(this)
+                            .setTitle(R.string.error)
+                            .setMessage(getString(R.string.invalid_link) + "\n\n" + e.getMessage())
+                            .setPositiveButton(R.string.ok, null)
+                            .show();
+                }
 
-                        finish();
-                    })
-                    .addOnCompleteListener(task -> imageProxy.close());
+                finish();
+
+            } catch (FormatException | ChecksumException | NotFoundException e) {
+                // ignored
+            }
+
+            imageProxy.close();
 
         });
 
@@ -179,8 +189,13 @@ public class QRScanActivity extends AppCompatActivity {
         Log.d(TAG, "onDestroy");
     }
 
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 }
