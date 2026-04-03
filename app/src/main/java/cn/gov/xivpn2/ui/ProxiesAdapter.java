@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
@@ -39,16 +40,41 @@ public class ProxiesAdapter extends RecyclerView.Adapter<ProxiesAdapter.ViewHold
         return new ViewHolder(view);
     }
 
-    public void addProxies(List<Proxy> proxyList) {
-        int length = this.proxies.size();
-        proxies.addAll(proxyList);
-        this.notifyItemRangeInserted(length, proxyList.size());
-    }
+    /**
+     * Replace proxies with new ones
+     */
+    public void replaceProxies(List<Proxy> newProxies) {
 
-    public void clear() {
-        int length = this.proxies.size();
-        proxies.clear();
-        this.notifyItemRangeRemoved(0, length);
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return proxies.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return newProxies.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Proxy oldProxy = proxies.get(oldItemPosition);
+                Proxy newProxy = newProxies.get(newItemPosition);
+                return oldProxy.id == newProxy.id;
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                Proxy oldProxy = proxies.get(oldItemPosition);
+                Proxy newProxy = newProxies.get(newItemPosition);
+                return oldProxy.equals(newProxy);
+            }
+        });
+
+        this.proxies.clear();
+        this.proxies.addAll(newProxies);
+        diffResult.dispatchUpdatesTo(this);
+
     }
 
     @Override

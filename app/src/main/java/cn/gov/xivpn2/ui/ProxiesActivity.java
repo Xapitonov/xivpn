@@ -217,8 +217,9 @@ public class ProxiesActivity extends AppCompatActivity {
     }
 
     private void refresh() {
-        adapter.clear();
-        adapter.addProxies(AppDatabase.getInstance().proxyDao().findAll());
+
+        adapter.replaceProxies(AppDatabase.getInstance().proxyDao().findAll());
+
         SharedPreferences sp = getSharedPreferences("XIVPN", MODE_PRIVATE);
         adapter.setChecked(
                 sp.getString("SELECTED_LABEL", "No Proxy (Bypass Mode)"),
