@@ -1,0 +1,4 @@
+- xray v26.3.27
+- qrcode import / export
+- use xzing for qrcode scanning
+- bug fixes
