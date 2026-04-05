@@ -50,6 +50,9 @@
             android:name=".ui.SplitTunnelActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.AppSelectActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.ProxyChainActivity"
             android:exported="false" />
         <activity

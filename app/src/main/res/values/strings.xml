@@ -156,4 +156,6 @@
     <string name="import_from_qrcode">Import from QR code</string>
     <string name="no_camera_permission">Camera permission is not granted</string>
     <string name="share">Share</string>
+    <string name="applications">Applications</string>
+    <string name="rule_app_help">Match traffic by originating app</string>
 </resources>

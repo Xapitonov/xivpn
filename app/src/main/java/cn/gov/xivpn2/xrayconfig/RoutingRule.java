@@ -11,6 +11,7 @@ public class RoutingRule {
     public List<String> protocol;
     public String outboundTag;
     public List<String> inboundTag;
+    public List<String> process;
 
     public String outboundSubscription;
     public String outboundLabel;

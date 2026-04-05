@@ -1,5 +1,6 @@
 package cn.gov.xivpn2.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -7,12 +8,15 @@ import android.view.MenuItem;
 import android.widget.AutoCompleteTextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -41,8 +45,20 @@ public class RuleActivity extends AppCompatActivity {
     private AutoCompleteTextView network;
     private AutoCompleteTextView outbound;
     private TextInputLayout outboundLayout;
+    private MaterialButton btnApps;
+
     private List<Proxy> proxies;
     private int index = 0;
+
+    private ActivityResultLauncher<Intent> appSelectLauncher;
+
+    private void updateAppsButtonText() {
+        if (rule.process != null && !rule.process.isEmpty()) {
+            btnApps.setText(getString(R.string.applications) + " (" + rule.process.size() + ")");
+        } else {
+            btnApps.setText(R.string.applications);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +76,18 @@ public class RuleActivity extends AppCompatActivity {
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        // register activity result launcher
+        appSelectLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        ArrayList<String> selectedApps = result.getData().getStringArrayListExtra("SELECTED_APPS");
+                        rule.process = Objects.requireNonNullElseGet(selectedApps, ArrayList::new);
+                        updateAppsButtonText();
+                    }
+                }
+        );
+
         // bind views
         label = findViewById(R.id.edit_label);
         inbound = findViewById(R.id.edit_inbound);
@@ -70,6 +98,17 @@ public class RuleActivity extends AppCompatActivity {
         network = findViewById(R.id.edit_network);
         outbound = findViewById(R.id.edit_out);
         outboundLayout = findViewById(R.id.layout_out);
+        btnApps = findViewById(R.id.btn_apps);
+
+        // app select button
+        btnApps.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AppSelectActivity.class);
+            if (rule.process != null) {
+                intent.putStringArrayListExtra("SELECTED_APPS", new ArrayList<>(rule.process));
+            }
+            appSelectLauncher.launch(intent);
+        });
+
 
         // load rule
         index = getIntent().getIntExtra("INDEX", -1);
@@ -88,6 +127,7 @@ public class RuleActivity extends AppCompatActivity {
                 rule.protocol = new ArrayList<>();
                 rule.outboundTag = "";
                 rule.inboundTag = new ArrayList<>();
+                rule.process = new ArrayList<>();
                 getSupportActionBar().setTitle(R.string.new_rule);
             } else {
                 // edit existing rule
@@ -103,6 +143,8 @@ public class RuleActivity extends AppCompatActivity {
             port.setText(rule.port);
             protocols.setText(String.join("\n", rule.protocol));
             inbound.setText((rule.inboundTag == null || rule.inboundTag.isEmpty()) ? "" : rule.inboundTag.get(0));
+
+            updateAppsButtonText();
 
             network.setAdapter(new NonFilterableArrayAdapter(this, R.layout.list_item, List.of("tcp", "udp", "tcp,udp")));
             network.setText(rule.network);
@@ -174,6 +216,7 @@ public class RuleActivity extends AppCompatActivity {
             } else {
                 rule.inboundTag = List.of(inbound.getText().toString());
             }
+            // rule.process is already set by the activity result launcher
 
             try {
                 List<RoutingRule> rules = Rules.readRules(getFilesDir());

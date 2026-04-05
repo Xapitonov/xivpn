@@ -8,17 +8,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.net.VpnService;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.system.ErrnoException;
 import android.system.Os;
+import android.system.OsConstants;
 import android.util.Log;
 import android.util.Pair;
 import android.widget.Toast;
@@ -41,6 +44,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -51,9 +55,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import cn.gov.xivpn2.NotificationID;
 import cn.gov.xivpn2.R;
@@ -481,6 +488,8 @@ public class XiVPNService extends VpnService implements SocketProtect {
      * Handles IPC commands from libxivpn. Called in ipcThread.
      */
     private void ipcLoop(LocalSocket socket) {
+        ConnectivityManager connectivityManager = getSystemService(ConnectivityManager.class);
+
         try {
             InputStream reader = socket.getInputStream();
 
@@ -497,7 +506,6 @@ public class XiVPNService extends VpnService implements SocketProtect {
 
                 switch (splits[0]) {
                     case "ping":
-                        break;
                     case "pong":
                         break;
                     case "protect":
@@ -525,6 +533,40 @@ public class XiVPNService extends VpnService implements SocketProtect {
                         ipcWriter.write("protect_ack\n".getBytes(StandardCharsets.US_ASCII));
                         ipcWriter.flush();
                         break;
+                    case "find_process":
+
+                        Pattern re = Pattern.compile("find_process (tcp|udp) ([0-9a-z.:]+) (\\d+) ([0-9a-z.:]+) (\\d+)");
+                        Matcher matcher = re.matcher(line);
+                        if (!matcher.matches()) {
+                            Log.e(TAG, "bad find_process request: " + line);
+                            break;
+                        }
+
+                        String network = matcher.group(1);
+                        String localAddress = matcher.group(2);
+                        int localPort = Integer.parseInt(Objects.requireNonNull(matcher.group(3)));
+                        String remoteAddress = matcher.group(4);
+                        int remotePort = Integer.parseInt(Objects.requireNonNull(matcher.group(5)));
+
+                        Log.d(TAG, "find_process: " + network + " " + localAddress + " " + localPort + " " + remoteAddress + " " + remotePort);
+
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                int protocol = "tcp".equals(network) ? OsConstants.IPPROTO_TCP : OsConstants.IPPROTO_UDP;
+                                int ownerUid = connectivityManager.getConnectionOwnerUid(protocol, new InetSocketAddress(localAddress, localPort), new InetSocketAddress(remoteAddress, remotePort));
+                                Log.d(TAG, "find_process_resp: " + ownerUid);
+                                ipcWriter.write(("find_process_resp " + ownerUid + "\n").getBytes(StandardCharsets.US_ASCII));
+                                ipcWriter.flush();
+                            } else {
+                                throw new UnsupportedOperationException("getConnectionOwnerUid requires android 10");
+                            }
+                        } catch (SecurityException | IllegalArgumentException | UnsupportedOperationException e) {
+                            Log.e(TAG, "getConnectionOwnerUid failed", e);
+
+                            ipcWriter.write("find_process_resp unknown\n".getBytes(StandardCharsets.US_ASCII));
+                            ipcWriter.flush();
+                        }
+
                 }
             }
 
@@ -718,6 +760,22 @@ public class XiVPNService extends VpnService implements SocketProtect {
                 if (rule.ip.isEmpty()) rule.ip = null;
                 if (rule.port.isEmpty()) rule.port = null;
                 if (rule.protocol.isEmpty()) rule.protocol = null;
+
+                // resolve package names to UIDs for per-app routing
+                if (rule.process != null && !rule.process.isEmpty()) {
+                    List<String> uids = new ArrayList<>();
+                    for (String pkg : rule.process) {
+                        try {
+                            int uid = getPackageManager().getPackageUid(pkg, 0);
+                            uids.add(String.valueOf(uid));
+                        } catch (PackageManager.NameNotFoundException e) {
+                            Log.w(TAG, "package not found for routing rule: " + pkg);
+                        }
+                    }
+                    rule.process = uids;
+                }
+                if (rule.process != null && rule.process.isEmpty()) rule.process = null;
+
                 rule.outboundLabel = null;
                 rule.outboundSubscription = null;
                 rule.label = null;
