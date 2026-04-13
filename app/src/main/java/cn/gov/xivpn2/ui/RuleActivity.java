@@ -45,7 +45,7 @@ public class RuleActivity extends AppCompatActivity {
     private AutoCompleteTextView network;
     private AutoCompleteTextView outbound;
     private TextInputLayout outboundLayout;
-    private MaterialButton btnApps;
+    private AutoCompleteTextView apps;
 
     private List<Proxy> proxies;
     private int index = 0;
@@ -54,9 +54,9 @@ public class RuleActivity extends AppCompatActivity {
 
     private void updateAppsButtonText() {
         if (rule.process != null && !rule.process.isEmpty()) {
-            btnApps.setText(getString(R.string.applications) + " (" + rule.process.size() + ")");
+            apps.setText(getString(R.string.applications) + " (" + rule.process.size() + ")");
         } else {
-            btnApps.setText(R.string.applications);
+            apps.setText(R.string.applications);
         }
     }
 
@@ -98,10 +98,10 @@ public class RuleActivity extends AppCompatActivity {
         network = findViewById(R.id.edit_network);
         outbound = findViewById(R.id.edit_out);
         outboundLayout = findViewById(R.id.layout_out);
-        btnApps = findViewById(R.id.btn_apps);
+        apps = findViewById(R.id.edit_apps);
 
         // app select button
-        btnApps.setOnClickListener(v -> {
+        apps.setOnClickListener(v -> {
             Intent intent = new Intent(this, AppSelectActivity.class);
             if (rule.process != null) {
                 intent.putStringArrayListExtra("SELECTED_APPS", new ArrayList<>(rule.process));
