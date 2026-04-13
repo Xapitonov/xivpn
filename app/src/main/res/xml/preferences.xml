@@ -110,6 +110,13 @@
         app:iconSpaceReserved="false"
         app:title="@string/about">
 
+
+        <Preference
+            android:title="@string/app_version"
+            app:iconSpaceReserved="false"
+            app:key="app_version"
+            app:summary="" />
+
         <Preference
             app:iconSpaceReserved="false"
             app:key="privacy_policy"
@@ -133,10 +140,10 @@
             app:title="@string/open_source_licenses" />
 
         <Preference
-            android:title="@string/app_version"
             app:iconSpaceReserved="false"
-            app:key="app_version"
-            app:summary="" />
+            android:title="@string/donation"
+            app:key="donation"
+            app:summary="@string/donation_summary" />
 
 
     </PreferenceCategory>

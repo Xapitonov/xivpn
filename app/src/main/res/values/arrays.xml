@@ -30,4 +30,10 @@
         <item>chocolate4u/Iran-v2ray-rules geosite-lite</item>
         <item>runetfreedom/russia-v2ray-rules-dat</item>
     </string-array>
+    <string-array name="donation">
+        <item>Tron / USDT TRC20</item>
+        <item>Ethereum</item>
+        <item>Solana</item>
+        <item>Monero XMR</item>
+    </string-array>
 </resources>
