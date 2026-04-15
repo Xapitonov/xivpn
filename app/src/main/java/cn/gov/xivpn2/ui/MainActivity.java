@@ -250,6 +250,9 @@ public class MainActivity extends AppCompatActivity {
             if (item.getItemId() == R.id.dns) {
                 startActivity(new Intent(this, DNSActivity.class));
             }
+            if (item.getItemId() == R.id.routing_visualization) {
+                startActivity(new Intent(this, VisualizationActivity.class));
+            }
             drawerLayout.close();
             return false;
         });

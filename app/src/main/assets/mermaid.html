@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script src="mermaid.min.js"></script>
+
+    <div id="container"></div>
+    <div id="container2"></div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: false });
+        async function render(text) {
+            try {
+                const { svg } = (await mermaid.render("container", text));
+                document.getElementById("container2").innerHTML = svg;
+            } catch (e) {
+                console.error(e);
+                alert("Render failed:\n\n" + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

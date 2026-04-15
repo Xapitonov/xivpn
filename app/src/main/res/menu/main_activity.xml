@@ -38,4 +38,10 @@
         app:showAsAction="ifRoom"
         android:icon="@drawable/build"/>
 
+    <item
+        android:id="@+id/routing_visualization"
+        android:title="@string/routing_visualization"
+        android:icon="@drawable/flowchart"
+        app:showAsAction="ifRoom" />
+
 </menu>

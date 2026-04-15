@@ -168,4 +168,6 @@
     <string name="donation_summary">I am a broke college student. Please donate to me &#x2764;&#xfe0f;</string>
     <string name="wallet_address">Wallet Address</string>
     <string name="copy">Copy</string>
+    <string name="routing">Routing Visualization</string>
+    <string name="routing_visualization">Routing Visualization</string>
 </resources>

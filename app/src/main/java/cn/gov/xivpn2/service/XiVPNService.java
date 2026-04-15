@@ -838,9 +838,7 @@ public class XiVPNService extends VpnService implements SocketProtect {
 
                 if (proxy.protocol.equals("proxy-chain")) {
                     // proxy chain
-                    Outbound<ProxyChainSettings> proxyChainOutbound = gson.fromJson(proxy.config, new TypeToken<Outbound<ProxyChainSettings>>() {
-
-                    }.getType());
+                    Outbound<ProxyChainSettings> proxyChainOutbound = gson.fromJson(proxy.config, new TypeToken<Outbound<ProxyChainSettings>>() { }.getType());
 
                     List<LabelSubscription> proxyChains = proxyChainOutbound.settings.proxies;
 
