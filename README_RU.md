@@ -46,6 +46,7 @@ Tron / USDT TRC20 `TTpzvVJ7cv2RZVihd48GGZXg1896WFgQuJ`
 Ethereum `0x593065aDE108505356abaD9c58bE950115678593`   
 Solana `CyRPKfkGnrAtVKijorcFYocL5fY37tX9j1atm2m8cY8m`   
 XMR `84iR4Tz29wFKxDpceeFhZQc3msh7N59PdNqxhEY9HjtZKs7wHqGLhw5AJ5p5zkxHMpU7DKHmhjjHmV7jaoVteoWsQs81tf3`
+GitHub Sponsor [https://github.com/sponsors/Exclude0122](https://github.com/sponsors/Exclude0122)
 
 
 ## Пометка для разработчиков

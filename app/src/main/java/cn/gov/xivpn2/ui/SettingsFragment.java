@@ -79,6 +79,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                             case 1: walletAddress = "0x593065aDE108505356abaD9c58bE950115678593"; break;
                             case 2: walletAddress = "CyRPKfkGnrAtVKijorcFYocL5fY37tX9j1atm2m8cY8m"; break;
                             case 3: walletAddress = "84iR4Tz29wFKxDpceeFhZQc3msh7N59PdNqxhEY9HjtZKs7wHqGLhw5AJ5p5zkxHMpU7DKHmhjjHmV7jaoVteoWsQs81tf3"; break;
+                            case 4: openUrl("https://github.com/sponsors/Exclude0122"); return;
                         }
 
                         String finalWalletAddress = walletAddress;
